@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Formsist</title>
+<meta name="description" content="Local form-guidance tool for first-time internet users.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=JetBrains+Mono:wght@400;500&family=Playwrite+IN&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#101012;
+  --sf:#18181b;
+  --sf2:#222225;
+  --bd:#27272a;
+  --tx:#d4d4d8;
+  --tx2:#71717a;
+  --tx3:#3f3f46;
+  --ac:#ca8a04;
+  --ac2:rgba(202,138,4,.08);
+  --dn:#dc2626;
+  --dn2:rgba(220,38,38,.08);
+  --ok:#16a34a;
+  --ok2:rgba(22,163,74,.08);
+  --r:3px;
+  --font:'Manrope','Noto Sans Devanagari','Noto Sans Telugu',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --hw:'Playwrite IN',cursive;
+  --top:44px;
+  --bot:52px;
+}
+
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);line-height:1.6;
+  padding-top:var(--top);padding-bottom:var(--bot);min-height:100dvh}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+::selection{background:var(--ac);color:#000}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ── TOP ── */
+.top{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--top);
+  background:var(--bg);border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;padding:0 1rem;gap:.75rem}
+.top-name{font-weight:800;font-size:.8rem;letter-spacing:-.02em;color:var(--tx)}
+.top-sep{width:1px;height:16px;background:var(--bd)}
+.top-status{font-family:var(--mono);font-size:.6rem;color:var(--ac);letter-spacing:.04em}
+.top-r{margin-left:auto}
+.top select{font-family:var(--font);font-size:.7rem;font-weight:600;background:transparent;
+  color:var(--tx2);border:1px solid var(--bd);border-radius:var(--r);padding:.25rem .4rem;cursor:pointer}
+.top select option{background:var(--sf);color:var(--tx)}
+
+/* ── BOTTOM NAV ── */
+.bot{position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--bot);
+  background:var(--bg);border-top:1px solid var(--bd);
+  display:flex;align-items:stretch}
+.bot button{flex:1;background:none;border:none;color:var(--tx3);font-family:var(--font);
+  font-size:.62rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+  cursor:pointer;position:relative;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;
+  -webkit-tap-highlight-color:transparent;transition:color .12s}
+.bot button.on{color:var(--ac)}
+.bot button.on::after{content:'';position:absolute;top:0;left:25%;right:25%;
+  height:2px;background:var(--ac)}
+.bot .dot{width:4px;height:4px;border-radius:50%;background:var(--dn);display:none;
+  position:absolute;top:8px;right:calc(50% - 14px)}
+.bot .dot.vis{display:block}
+
+/* ── SCREENS ── */
+.v{display:none;flex-direction:column;width:100%;max-width:460px;margin:0 auto;
+  padding:1.25rem 1.1rem 2rem;min-height:calc(100dvh - var(--top) - var(--bot))}
+.v.on{display:flex}
+
+/* ── TYPOGRAPHY ── */
+.h1{font-size:1.15rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.25rem}
+.h2{font-size:.95rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.2rem}
+.h3{font-size:.78rem;font-weight:700;letter-spacing:-.01em}
+.dim{font-size:.75rem;color:var(--tx2);line-height:1.55}
+.mono{font-family:var(--mono);font-size:.7rem}
+.label{display:block;font-size:.62rem;font-weight:700;color:var(--tx2);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem}
+.sep{height:1px;background:var(--bd);margin:1.25rem 0}
+
+/* ── INPUTS ── */
+.inp{width:100%;font-family:var(--font);font-size:.82rem;padding:.55rem .7rem;
+  background:var(--sf);color:var(--tx);border:1px solid var(--bd);border-radius:var(--r)}
+.inp:focus{border-color:var(--ac);outline:none}
+.inp::placeholder{color:var(--tx3)}
+textarea.inp{resize:vertical;min-height:72px}
+select.inp{cursor:pointer}
+select.inp option{background:var(--sf)}
+.field{margin-bottom:.85rem}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  font-family:var(--font);font-weight:700;font-size:.78rem;border-radius:var(--r);
+  cursor:pointer;border:1px solid transparent;min-height:44px;
+  -webkit-tap-highlight-color:transparent;transition:opacity .1s}
+.btn:active{opacity:.75}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.pri{background:var(--ac);color:#000;padding:.55rem 1.2rem;width:100%}
+.sec{background:transparent;color:var(--tx);border-color:var(--bd);padding:.45rem .9rem}
+.sec:hover{border-color:var(--tx2)}
+.dan{background:var(--dn);color:#fff;padding:.45rem .9rem}
+.ghost{background:none;border:none;color:var(--tx2);font-weight:600;padding:.35rem 0;
+  min-height:36px;font-size:.75rem}
+.ghost:hover{color:var(--tx)}
+
+/* ── LIST ROWS ── */
+.row{display:flex;align-items:center;gap:.75rem;padding:.7rem 0;
+  border-bottom:1px solid var(--bd);cursor:pointer}
+.row:last-child{border-bottom:none}
+.row:active{opacity:.7}
+.row-b{flex:1;min-width:0}
+.row-t{font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-m{font-size:.68rem;color:var(--tx2);margin-top:.1rem}
+.row-i{width:28px;height:28px;border-radius:var(--r);background:var(--sf2);
+  display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--tx2);flex-shrink:0}
+
+/* ── STATUS ── */
+.st{font-family:var(--mono);font-size:.58rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;
+  padding:.15rem .4rem;border-radius:2px}
+.st-draft{background:var(--ac2);color:var(--ac)}
+.st-submitted{background:var(--ok2);color:var(--ok)}
+.st-needs_action{background:var(--dn2);color:var(--dn)}
+.st-completed{color:var(--tx3)}
+
+/* ── BACK ── */
+.bk{display:inline-flex;align-items:center;gap:.3rem;background:none;border:none;
+  font-family:var(--font);font-size:.75rem;font-weight:600;color:var(--tx2);
+  cursor:pointer;padding:.3rem 0;margin-bottom:.75rem;min-height:36px}
+.bk:active{color:var(--tx)}
+
+/* ── ALERT BOX ── */
+.alert{border-left:3px solid var(--dn);padding:.75rem .85rem;margin-bottom:1rem;
+  background:var(--dn2);font-size:.78rem;line-height:1.6}
+.alert-t{font-weight:700;color:var(--dn);margin-bottom:.3rem}
+.alert-b{display:flex;gap:.5rem;margin-top:.7rem}
+.alert-b .btn{flex:1}
+
+/* ── FIELD CARD (results) ── */
+.fc{border-bottom:1px solid var(--bd);padding:.85rem 0}
+.fc:last-child{border-bottom:none}
+.fc-h{font-family:var(--mono);font-size:.72rem;font-weight:500;color:var(--ac);margin-bottom:.4rem;
+  display:flex;align-items:center;justify-content:space-between}
+.fc-t{font-size:.8rem;line-height:1.65;margin-bottom:.4rem}
+.fc-e{font-family:var(--hw);font-size:.88rem;color:var(--tx3);margin-bottom:.1rem}
+.fc-el{font-size:.55rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em}
+
+/* ── SPINNER ── */
+.spin-w{display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:2rem}
+.spin{width:32px;height:32px;border:2.5px solid var(--bd);border-top-color:var(--ac);
+  border-radius:50%;animation:sp .6s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.spin-t{font-size:.78rem;color:var(--tx2)}
+
+/* ── PREVIEW ── */
+.prev{width:100%;max-height:220px;object-fit:contain;border:1px solid var(--bd);
+  border-radius:var(--r);background:var(--sf);margin-bottom:.85rem}
+
+/* ── COMPRESS STATS ── */
+.cs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1rem}
+.cs-i{text-align:center;padding:.5rem;background:var(--sf);border-radius:var(--r)}
+.cs-v{font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--ac)}
+.cs-l{font-size:.55rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;margin-top:.15rem}
+
+/* ── UNMATCHED ── */
+.um-t{font-size:.72rem;font-weight:600;color:var(--tx3);background:none;border:1px solid var(--bd);
+  border-radius:var(--r);padding:.55rem .7rem;cursor:pointer;width:100%;text-align:left;
+  display:flex;align-items:center;gap:.35rem;margin-top:1rem;font-family:var(--font);min-height:40px}
+.um-t:active{background:var(--sf)}
+.um-a{font-size:.6rem;transition:transform .12s}
+.um-t[aria-expanded="true"] .um-a{transform:rotate(90deg)}
+.um-l{display:none;border:1px solid var(--bd);border-top:none;padding:.5rem .7rem;font-size:.7rem;color:var(--tx3)}
+.um-l.open{display:block}
+.um-i{padding:.2rem 0;border-bottom:1px solid var(--bd);word-break:break-word}
+.um-i:last-child{border-bottom:none}
+
+/* ── CONFIDENCE ── */
+.conf{font-size:.75rem;padding:.6rem .7rem;border-left:3px solid var(--ac);
+  background:var(--ac2);margin-bottom:.85rem;color:var(--ac);line-height:1.5}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);
+  display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.vis{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);
+  padding:1.1rem;width:100%;max-width:340px}
+.modal h3{font-size:.85rem;font-weight:700;margin-bottom:.35rem}
+.modal p{font-size:.75rem;color:var(--tx2);margin-bottom:.85rem;line-height:1.55}
+.modal-b{display:flex;gap:.5rem}
+.modal-b .btn{flex:1}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--tx3);font-size:.78rem}
+
+/* ── AUDIT ── */
+.au{padding:.55rem 0;border-bottom:1px solid var(--bd);font-size:.75rem}
+.au:last-child{border-bottom:none}
+.au-t{font-family:var(--mono);font-size:.6rem;color:var(--tx3)}
+.au-d{margin-top:.1rem}
+
+/* ── PRACTICE ── */
+.pl{cursor:pointer;text-decoration-line:underline;text-decoration-style:dotted;
+  text-underline-offset:3px;text-decoration-color:var(--tx3)}
+.pl:hover{text-decoration-color:var(--ac)}
+.guide{border-left:3px solid var(--ac);padding:.65rem .85rem;margin-bottom:1rem;
+  background:var(--ac2);font-size:.8rem;line-height:1.6}
+.guide-h{font-family:var(--mono);font-size:.68rem;color:var(--ac);margin-bottom:.3rem;font-weight:500}
+
+/* ── ACTIONS (cockpit) ── */
+.actions{display:flex;flex-direction:column;gap:1px;margin:1rem 0;
+  border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.act{display:flex;align-items:center;gap:.7rem;padding:.7rem .8rem;background:var(--sf);
+  border:none;font-family:var(--font);font-size:.8rem;font-weight:600;color:var(--tx);
+  cursor:pointer;text-align:left;width:100%;min-height:48px;
+  -webkit-tap-highlight-color:transparent}
+.act:active{background:var(--sf2)}
+.act-c{font-family:var(--mono);font-size:.62rem;color:var(--tx2);margin-left:auto;font-weight:400}
+
+/* ── URL BAR ── */
+.url-row{display:flex;gap:6px;margin-bottom:.5rem}
+.url-row .inp{flex:1;font-family:var(--mono);font-size:.72rem}
+.url-go{font-family:var(--mono);font-size:.7rem;font-weight:700;padding:0 .75rem;
+  background:var(--ac);color:#000;border:none;border-radius:var(--r);cursor:pointer;
+  min-width:44px;display:flex;align-items:center;justify-content:center}
+.url-go:active{opacity:.75}
+.presets{font-size:.68rem;color:var(--tx3);margin-bottom:1.25rem}
+.presets a{color:var(--tx2);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.presets a:hover{color:var(--ac)}
+
+/* ── HIDDEN ── */
+.hide{display:none!important}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:calc(var(--top) + 6px);left:50%;transform:translateX(-50%);
+  background:var(--sf2);color:var(--ac);border:1px solid var(--bd);
+  padding:.35rem .85rem;border-radius:var(--r);font-size:.7rem;font-weight:600;
+  z-index:300;font-family:var(--mono);animation:fo 2.5s forwards}
+@keyframes fo{0%,60%{opacity:1}100%{opacity:0}}
+
+/* ── CHATBOT ── */
+.chat-fab {
+  position: fixed; bottom: calc(var(--bot) + 16px); right: 16px; z-index: 90;
+  width: 48px; height: 48px; border-radius: 50%; background: var(--ac); color: #000;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: pointer; border: none; font-size: 1.2rem;
+}
+.chat-w {
+  position: fixed; bottom: calc(var(--bot) + 70px); right: 16px; z-index: 90;
+  width: calc(100% - 32px); max-width: 360px; height: 450px; max-height: calc(100dvh - var(--top) - var(--bot) - 90px);
+  background: var(--bg); border: 1px solid var(--bd); border-radius: 8px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.8); transform: translateY(10px); opacity: 0; pointer-events: none; transition: all 0.2s;
+}
+.chat-w.on { transform: translateY(0); opacity: 1; pointer-events: auto; }
+.chat-h {
+  padding: 0.75rem 1rem; border-bottom: 1px solid var(--bd); background: var(--sf);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.chat-title { font-weight: 700; font-size: 0.85rem; }
+.chat-close { background: none; border: none; color: var(--tx2); font-size: 1.2rem; cursor: pointer; }
+.chat-b { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.msg { padding: 0.6rem 0.85rem; border-radius: 6px; font-size: 0.8rem; max-width: 85%; line-height: 1.5; }
+.msg.user { background: var(--sf2); color: var(--tx); align-self: flex-end; border-bottom-right-radius: 0; }
+.msg.ai { background: var(--ac2); color: var(--tx); align-self: flex-start; border-left: 2px solid var(--ac); border-bottom-left-radius: 0; }
+.chat-i { padding: 0.75rem; border-top: 1px solid var(--bd); background: var(--sf); display: flex; gap: 0.5rem; }
+.chat-i .inp { flex: 1; min-height: 38px; padding: 0.4rem 0.6rem; border-radius: 4px; }
+.chat-i .btn { min-height: 38px; padding: 0 1rem; border-radius: 4px; }
+
+@media(min-width:520px){.v{padding:1.5rem 1.25rem 2.5rem}}
+</style>
+</head>
+<body>
+
+<!-- TOP -->
+<header class="top">
+  <span class="top-name">Formsist</span>
+  <span class="top-sep"></span>
+  <span class="top-status mono">local</span>
+  <div class="top-r">
+    <select id="globalLang" aria-label="Language">
+      <option value="en">en</option>
+      <option value="hi">hi</option>
+      <option value="te">te</option>
+    </select>
+  </div>
+</header>
+
+<!-- SCREENS -->
+<main>
+
+<!-- HOME -->
+<section class="v on" id="v-home">
+  <h1 class="h1" data-t="homeTitle">What do you need?</h1>
+  <p class="dim" style="margin-bottom:1rem" data-t="homeSub">Everything runs on your device. Nothing is sent anywhere.</p>
+
+  <div class="actions">
+    <button class="act" id="goScan"><span data-t="actScan">Scan a paper form</span><span class="act-c">OCR</span></button>
+    <button class="act" id="goSnip"><span data-t="actSnip">Snip & fill a web form</span><span class="act-c">OCR</span></button>
+  </div>
+
+  <div class="url-row">
+    <input class="inp" id="urlInput" placeholder="paste a URL or type 'practice'">
+    <button class="url-go" id="goUrl" aria-label="Go">→</button>
+  </div>
+  <div class="presets"><a data-url="practice" data-t="pPractice">practice form</a>&ensp;·&ensp;<a data-url="scholarship" data-t="pScholar">scholarship</a></div>
+</section>
+
+<!-- PROFILE -->
+<section class="v" id="v-profile">
+  <h1 class="h1" data-t="profTitle">Profile</h1>
+  <p class="dim" style="margin-bottom:1rem" data-t="profSub">Stored locally. Used to pre-fill forms.</p>
+  <div class="field"><label class="label" data-t="lName">Name</label><input class="inp" id="profName" data-t-placeholder="phName" placeholder="Full name as on ID"></div>
+  <div class="field"><label class="label" data-t="lDob">Date of birth</label><input class="inp" id="profDob" type="date"></div>
+  <div class="field"><label class="label" data-t="lPhone">Phone</label><input class="inp" id="profPhone" type="tel" data-t-placeholder="phPhone" placeholder="10-digit mobile"></div>
+  <div class="field"><label class="label" data-t="lEmail">Email</label><input class="inp" id="profEmail" type="email" placeholder="you@email.com"></div>
+  <div class="field"><label class="label" data-t="lAddr">Address</label><textarea class="inp" id="profAddr" data-t-placeholder="phAddr" placeholder="Full address with PIN code"></textarea></div>
+  <button class="btn pri" id="saveProf"><span data-t="saveProf">Save</span></button>
+  <p class="dim" style="margin-top:.75rem;text-align:center;font-size:.65rem" data-t="profNote">Never leaves your device.</p>
+</section>
+
+<!-- VAULT -->
+<section class="v" id="v-vault">
+  <h1 class="h1" data-t="vTitle">Vault</h1>
+  <p class="dim" style="margin-bottom:1rem" data-t="vSub">Compress images before uploading to portals.</p>
+  <button class="btn sec" id="goCompress" style="margin-bottom:1.25rem"><span data-t="vSelect">Select image</span></button>
+  <input type="file" accept="image/*" class="hide" id="compIn">
+  <div id="compOut" class="hide">
+    <img id="compPrev" class="prev" alt="Preview">
+    <div class="cs">
+      <div class="cs-i"><div class="cs-v" id="origSz">–</div><div class="cs-l" data-t="vOrig">before</div></div>
+      <div class="cs-i"><div class="cs-v" id="compSz">–</div><div class="cs-l" data-t="vComp">after</div></div>
+      <div class="cs-i"><div class="cs-v" id="savePct">–</div><div class="cs-l" data-t="vSaved">saved</div></div>
+    </div>
+    <button class="btn pri" id="dlComp"><span data-t="vDl">Download compressed</span></button>
+  </div>
+  <div class="sep"></div>
+  <h2 class="h3" data-t="vRecent">Recent</h2>
+  <div id="docList" style="margin-top:.5rem"></div>
+</section>
+
+<!-- TRACK -->
+<section class="v" id="v-track">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">
+    <h1 class="h1" data-t="trTitle">Track</h1>
+    <button class="btn sec" style="min-height:36px;font-size:.7rem" id="addApp">+ <span data-t="trAdd">new</span></button>
+  </div>
+  <p class="dim" style="margin-bottom:1rem" data-t="trSub">Never miss a deadline.</p>
+  <div id="appList"></div>
+</section>
+
+<!-- LOG -->
+<section class="v" id="v-log">
+  <h1 class="h1" data-t="lgTitle">Log</h1>
+  <p class="dim" style="margin-bottom:1rem" data-t="lgSub">Privacy guardrail events. No sensitive values stored.</p>
+  <div id="auditList"></div>
+  <button class="ghost" id="clearAudit" style="margin-top:.5rem" data-t="lgClear">clear log</button>
+</section>
+
+<!-- SUB: SCAN -->
+<section class="v" id="s-scan">
+  <button class="bk" id="scanBk">← <span data-t="back">back</span></button>
+  <h2 class="h2" data-t="scTitle">Scan your form</h2>
+  <p class="dim" style="margin-bottom:1rem" data-t="scSub">Take a photo or choose a file. We read it locally and explain each field.</p>
+  <button class="btn pri" id="btnPhoto" style="margin-bottom:.5rem"><span data-t="scPhoto">Take photo</span></button>
+  <button class="btn sec" id="btnGallery" style="margin-bottom:1rem"><span data-t="scGallery">Choose from files</span></button>
+  <input type="file" accept="image/*" capture="environment" class="hide" id="capIn">
+  <input type="file" accept="image/*" class="hide" id="galIn">
+  <div id="scPrevW" class="hide"><img id="scPrev" class="prev" alt="Form"></div>
+  <div id="scSpin" class="hide"><div class="spin-w"><div class="spin"></div><div class="spin-t" data-t="scReading">Reading…</div></div></div>
+  <div id="scConf" class="conf hide" data-t="scBlur">Photo may be blurry. Try better lighting.</div>
+</section>
+
+<!-- SUB: RESULTS -->
+<section class="v" id="s-results">
+  <button class="bk" id="resBk">← <span data-t="scAgain">scan another</span></button>
+  <div id="guardW" class="hide">
+    <div class="alert">
+      <div class="alert-t" data-t="grTitle">Sensitive number detected</div>
+      <div data-t="grText">This looks like an Aadhaar or PAN number. Only enter it on the official form.</div>
+      <div class="alert-b">
+        <button class="btn sec" id="grCancel" data-t="cancel">Cancel</button>
+        <button class="btn dan" id="grOk" data-t="grOk">I understand</button>
+      </div>
+    </div>
+  </div>
+  <div id="resHW"><h2 class="h2" data-t="resFnd">Fields found</h2></div>
+  <div id="resCards"></div>
+  <div id="noRes" class="empty hide" data-t="resNone">No known fields found. Try a clearer photo.</div>
+  <div id="umW" class="hide">
+    <button class="um-t" id="umT" aria-expanded="false"><span class="um-a">▸</span> <span data-t="umText">Other text</span></button>
+    <div class="um-l" id="umL"></div>
+  </div>
+</section>
+
+<!-- SUB: WEB FORM -->
+<section class="v" id="s-web">
+  <button class="bk" id="webBk">← <span data-t="back">back</span></button>
+  <div id="webContent"></div>
+</section>
+
+<!-- SUB: ADD APP -->
+<section class="v" id="s-addapp">
+  <button class="bk" id="aaBk">← <span data-t="back">back</span></button>
+  <h2 class="h2" data-t="aaTitle">Track an application</h2>
+  <div class="sep"></div>
+  <div class="field"><label class="label" data-t="aaName">Name</label><input class="inp" id="aaNameIn" data-t-placeholder="aaNamePh" placeholder="e.g. Passport Renewal"></div>
+  <div class="field"><label class="label" data-t="aaStatus">Status</label>
+    <select class="inp" id="aaStatusIn"><option value="draft" data-t="stDraft">Draft</option><option value="submitted" data-t="stSubmit">Submitted</option><option value="needs_action" data-t="stAction">Needs action</option><option value="completed" data-t="stDone">Completed</option></select></div>
+  <div class="field"><label class="label" data-t="aaDeadline">Deadline</label><input class="inp" id="aaDeadIn" type="date"></div>
+  <div class="field"><label class="label" data-t="aaNotes">Notes</label><textarea class="inp" id="aaNotesIn" data-t-placeholder="aaNotesPh" placeholder="Any details"></textarea></div>
+  <button class="btn pri" id="aaSave"><span data-t="aaSaveBtn">Save</span></button>
+  <button class="btn ghost" id="aaDel" style="margin-top:.5rem;display:none;color:var(--dn)" data-t="aaDel">delete this</button>
+</section>
+
+<!-- SUB: PRACTICE -->
+<section class="v" id="s-practice">
+  <button class="bk" id="pracBk">← <span data-t="back">back</span></button>
+  <h2 class="h2" data-t="prTitle">Practice form</h2>
+  <p class="dim" style="margin-bottom:1rem" data-t="prSub">Tap any label for guidance. Pre-filled from your profile.</p>
+  <div class="field"><label class="label pl" data-field="name" data-t="lName">Name</label><input class="inp" id="pf-name" data-profile="name"></div>
+  <div class="field"><label class="label pl" data-field="dob" data-t="lDob">Date of birth</label><input class="inp" id="pf-dob" type="date" data-profile="dob"></div>
+  <div class="field"><label class="label pl" data-field="phone" data-t="lPhone">Phone</label><input class="inp" id="pf-phone" type="tel" data-profile="phone"></div>
+  <div class="field"><label class="label pl" data-field="email" data-t="lEmail">Email</label><input class="inp" id="pf-email" type="email" data-profile="email"></div>
+  <div class="field"><label class="label pl" data-field="address" data-t="lAddr">Address</label><textarea class="inp" id="pf-addr" data-profile="address"></textarea></div>
+  <div class="field"><label class="label pl" data-field="aadhaar" style="color:var(--dn)" data-t="lAadhaar">Aadhaar number</label><input class="inp" id="pf-aadhaar" data-sensitive="true"></div>
+  <div id="prGuide" class="hide"></div>
+  <button class="btn pri" id="prSubmit"><span data-t="prSubmitBtn">Submit</span></button>
+</section>
+
+<!-- CHATBOT -->
+<button class="chat-fab" id="chatFab">💬</button>
+<div class="chat-w" id="chatW">
+  <div class="chat-h">
+    <div class="chat-title">Formsist AI</div>
+    <button class="chat-close" id="chatClose">&times;</button>
+  </div>
+  <div class="chat-b" id="chatB">
+    <div class="msg ai">Hi! I can help you understand any form. Just ask.</div>
+  </div>
+  <div class="chat-i">
+    <input type="text" class="inp" id="chatInp" placeholder="Ask a question...">
+    <button class="btn pri" id="chatSend" style="width:auto">Send</button>
+  </div>
+</div>
+
+</main>
+
+<!-- BOTTOM -->
+<nav class="bot" id="botNav">
+  <button class="on" data-v="v-home"><span data-t="nHome">Home</span></button>
+  <button data-v="v-profile"><span data-t="nProf">Profile</span></button>
+  <button data-v="v-vault"><span data-t="nVault">Vault</span><span class="dot" id="vDot"></span></button>
+  <button data-v="v-track"><span data-t="nTrack">Track</span><span class="dot" id="tDot"></span></button>
+  <button data-v="v-log"><span data-t="nLog">Log</span></button>
+</nav>
+
+<!-- MODAL -->
+<div class="modal-bg" id="moBg">
+  <div class="modal"><h3 id="moT"></h3><p id="moP"></p>
+    <div class="modal-b"><button class="btn sec" id="moNo" data-t="cancel">Cancel</button><button class="btn pri" style="font-size:.75rem" id="moYes">OK</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ═══ i18n ═══ */
+const T={
+en:{
+homeTitle:'What do you need?',homeSub:'Everything runs on your device. Nothing is sent anywhere.',
+actScan:'Scan a paper form',actSnip:'Snip & fill a web form',actLang:'Switch language',
+pPractice:'practice form',pScholar:'scholarship',
+profTitle:'Profile',profSub:'Stored locally. Used to pre-fill forms.',
+lName:'Name',lDob:'Date of birth',lPhone:'Phone',lEmail:'Email',lAddr:'Address',lAadhaar:'Aadhaar number',
+phName:'Full name as on ID',phPhone:'10-digit mobile',phAddr:'Full address with PIN code',
+saveProf:'Save',profNote:'Never leaves your device.',profSaved:'Saved.',
+vTitle:'Vault',vSub:'Compress images before uploading to portals.',vSelect:'Select image',
+vOrig:'before',vComp:'after',vSaved:'saved',vDl:'Download compressed',vRecent:'Recent',
+trTitle:'Track',trSub:'Never miss a deadline.',trAdd:'new',
+lgTitle:'Log',lgSub:'Privacy guardrail events. No sensitive values stored.',lgClear:'clear log',
+scTitle:'Scan your form',scSub:'Take a photo or choose a file. We read it locally and explain each field.',
+scPhoto:'Take photo',scGallery:'Choose from files',scReading:'Reading…',
+scBlur:'Photo may be blurry. Try better lighting.',scAgain:'scan another',
+resFnd:'Fields found',resNone:'No known fields found. Try a clearer photo.',umText:'Other text',
+grTitle:'Sensitive number detected',grText:'This looks like an Aadhaar or PAN number. Only enter it on the official form.',
+cancel:'Cancel',grOk:'I understand',back:'back',readAloud:'read aloud',exLabel:'example',
+aaTitle:'Track an application',aaName:'Name',aaNamePh:'e.g. Passport Renewal',
+aaStatus:'Status',stDraft:'Draft',stSubmit:'Submitted',stAction:'Needs action',stDone:'Completed',
+aaDeadline:'Deadline',aaNotes:'Notes',aaNotesPh:'Any details',aaSaveBtn:'Save',aaDel:'delete this',
+appSaved:'Saved.',appDel:'Deleted.',
+nHome:'Home',nProf:'Profile',nVault:'Vault',nTrack:'Track',nLog:'Log',
+prTitle:'Practice form',prSub:'Tap any label for guidance. Pre-filled from your profile.',prSubmitBtn:'Submit',
+guidanceFor:'Guidance:',
+auditGrOcr:'Guardrail — OCR scan',auditGrIn:'Guardrail — form input',
+auditOk:'User confirmed',auditNo:'User cancelled',auditProf:'Profile accessed for autofill',
+dlSoon:'Deadline approaching',dlMsg:'"{name}" due {date}.',
+},
+hi:{
+homeTitle:'आपको क्या चाहिए?',homeSub:'सब कुछ आपके डिवाइस पर चलता है। कहीं भेजा नहीं जाता।',
+actScan:'कागज़ी फ़ॉर्म स्कैन करें',actSnip:'वेब फ़ॉर्म स्निप और भरें',actLang:'भाषा बदलें',
+pPractice:'अभ्यास फ़ॉर्म',pScholar:'छात्रवृत्ति',
+profTitle:'प्रोफ़ाइल',profSub:'डिवाइस पर सेव। फ़ॉर्म भरने के लिए उपयोग।',
+lName:'नाम',lDob:'जन्म तिथि',lPhone:'फ़ोन',lEmail:'ईमेल',lAddr:'पता',lAadhaar:'आधार नंबर',
+phName:'पहचान पत्र के अनुसार पूरा नाम',phPhone:'10 अंकों का मोबाइल',phAddr:'पिन कोड सहित पूरा पता',
+saveProf:'सेव करें',profNote:'आपका डेटा डिवाइस से बाहर नहीं जाता।',profSaved:'सेव हो गया।',
+vTitle:'वॉल्ट',vSub:'पोर्टल पर अपलोड से पहले इमेज कंप्रेस करें।',vSelect:'इमेज चुनें',
+vOrig:'पहले',vComp:'बाद',vSaved:'बचत',vDl:'कंप्रेस्ड डाउनलोड',vRecent:'हाल के',
+trTitle:'ट्रैक',trSub:'कोई डेडलाइन न चूकें।',trAdd:'नया',
+lgTitle:'लॉग',lgSub:'गोपनीयता गार्डरेल इवेंट। संवेदनशील मान कभी स्टोर नहीं।',lgClear:'लॉग साफ़',
+scTitle:'फ़ॉर्म स्कैन करें',scSub:'फ़ोटो लें या फ़ाइल चुनें। हम हर फ़ील्ड समझाएंगे।',
+scPhoto:'फ़ोटो खींचें',scGallery:'फ़ाइल से चुनें',scReading:'पढ़ रहा है…',
+scBlur:'फ़ोटो धुँधली हो सकती है।',scAgain:'दूसरा स्कैन',
+resFnd:'मिली फ़ील्ड',resNone:'कोई ज्ञात फ़ील्ड नहीं मिली।',umText:'अन्य टेक्स्ट',
+grTitle:'संवेदनशील नंबर पाया गया',grText:'यह आधार या PAN जैसा दिखता है। केवल आधिकारिक फ़ॉर्म पर दर्ज करें।',
+cancel:'रद्द',grOk:'मैं समझता/समझती हूँ',back:'वापस',readAloud:'सुनें',exLabel:'उदाहरण',
+aaTitle:'आवेदन ट्रैक करें',aaName:'नाम',aaNamePh:'जैसे पासपोर्ट नवीनीकरण',
+aaStatus:'स्थिति',stDraft:'ड्राफ्ट',stSubmit:'जमा',stAction:'कार्रवाई ज़रूरी',stDone:'पूर्ण',
+aaDeadline:'समय सीमा',aaNotes:'नोट्स',aaNotesPh:'विवरण',aaSaveBtn:'सेव',aaDel:'हटाएं',
+appSaved:'सेव हो गया।',appDel:'हटा दिया गया।',
+nHome:'होम',nProf:'प्रोफ़ाइल',nVault:'वॉल्ट',nTrack:'ट्रैक',nLog:'लॉग',
+prTitle:'अभ्यास फ़ॉर्म',prSub:'मार्गदर्शन के लिए किसी लेबल पर टैप करें।',prSubmitBtn:'जमा करें',
+guidanceFor:'मार्गदर्शन:',
+auditGrOcr:'गार्डरेल — OCR स्कैन',auditGrIn:'गार्डरेल — फ़ॉर्म इनपुट',
+auditOk:'उपयोगकर्ता ने पुष्टि की',auditNo:'उपयोगकर्ता ने रद्द किया',auditProf:'ऑटोफ़िल के लिए प्रोफ़ाइल',
+dlSoon:'समय सीमा आ रही है',dlMsg:'"{name}" की तारीख {date}।',
+},
+te:{
+homeTitle:'మీకు ఏమి కావాలి?',homeSub:'అంతా మీ పరికరంలో నడుస్తుంది. ఎక్కడికీ పంపబడదు.',
+actScan:'కాగితపు ఫారమ్ స్కాన్',actSnip:'వెబ్ ఫారమ్ స్నిప్ & ఫిల్',actLang:'భాష మార్చు',
+pPractice:'ప్రాక్టీస్ ఫారమ్',pScholar:'స్కాలర్‌షిప్',
+profTitle:'ప్రొఫైల్',profSub:'పరికరంలో మాత్రమే. ఫారమ్‌లు నింపడానికి ఉపయోగం.',
+lName:'పేరు',lDob:'పుట్టిన తేదీ',lPhone:'ఫోన్',lEmail:'ఇమెయిల్',lAddr:'చిరునామా',lAadhaar:'ఆధార్ నంబర్',
+phName:'ID ప్రకారం పూర్తి పేరు',phPhone:'10 అంకెల మొబైల్',phAddr:'పిన్ కోడ్‌తో పూర్తి చిరునామా',
+saveProf:'సేవ్',profNote:'మీ పరికరం నుండి బయటకు వెళ్ళదు.',profSaved:'సేవ్ అయింది.',
+vTitle:'వాల్ట్',vSub:'పోర్టల్‌లకు అప్‌లోడ్ ముందు కుదించండి.',vSelect:'చిత్రం ఎంచుకోండి',
+vOrig:'ముందు',vComp:'తర్వాత',vSaved:'ఆదా',vDl:'కుదించిన డౌన్‌లోడ్',vRecent:'ఇటీవలి',
+trTitle:'ట్రాక్',trSub:'గడువు తప్పకుండా.',trAdd:'కొత్తది',
+lgTitle:'లాగ్',lgSub:'గోప్యత గార్డ్‌రెయిల్ ఈవెంట్‌లు.',lgClear:'లాగ్ క్లియర్',
+scTitle:'ఫారమ్ స్కాన్',scSub:'ఫోటో తీయండి లేదా ఫైల్ ఎంచుకోండి.',
+scPhoto:'ఫోటో',scGallery:'ఫైల్స్ నుండి',scReading:'చదవబడుతోంది…',
+scBlur:'ఫోటో అస్పష్టంగా ఉండవచ్చు.',scAgain:'మరొకటి స్కాన్',
+resFnd:'కనుగొన్న ఫీల్డ్‌లు',resNone:'తెలిసిన ఫీల్డ్‌లు లేవు.',umText:'ఇతర టెక్స్ట్',
+grTitle:'సున్నితమైన నంబర్ గుర్తించబడింది',grText:'ఇది ఆధార్/PAN లాగా ఉంది. అధికారిక ఫారమ్‌లో మాత్రమే నమోదు చేయండి.',
+cancel:'రద్దు',grOk:'నాకు అర్థమైంది',back:'వెనుకకు',readAloud:'వినండి',exLabel:'ఉదాహరణ',
+aaTitle:'అప్లికేషన్ ట్రాక్',aaName:'పేరు',aaNamePh:'ఉదా. పాస్‌పోర్ట్',
+aaStatus:'స్థితి',stDraft:'డ్రాఫ్ట్',stSubmit:'సమర్పించబడింది',stAction:'చర్య అవసరం',stDone:'పూర్తయింది',
+aaDeadline:'గడువు',aaNotes:'గమనికలు',aaNotesPh:'వివరాలు',aaSaveBtn:'సేవ్',aaDel:'తొలగించు',
+appSaved:'సేవ్ అయింది.',appDel:'తొలగించబడింది.',
+nHome:'హోమ్',nProf:'ప్రొఫైల్',nVault:'వాల్ట్',nTrack:'ట్రాక్',nLog:'లాగ్',
+prTitle:'ప్రాక్టీస్ ఫారమ్',prSub:'మార్గదర్శకత్వం కోసం లేబల్ టాప్ చేయండి.',prSubmitBtn:'సమర్పించు',
+guidanceFor:'మార్గదర్శకత్వం:',
+auditGrOcr:'గార్డ్‌రెయిల్ — OCR',auditGrIn:'గార్డ్‌రెయిల్ — ఇన్‌పుట్',
+auditOk:'నిర్ధారించారు',auditNo:'రద్దు చేశారు',auditProf:'ప్రొఫైల్ యాక్సెస్',
+dlSoon:'గడువు సమీపిస్తోంది',dlMsg:'"{name}" తేదీ {date}.',
+},
+};
+
+/* ═══ KB ═══ */
+const KB={
+name:{v:['Name','Full Name','Applicant Name','नाम','पूरा नाम','పేరు','పూర్తి పేరు'],type:'profile',
+  t:{en:'Write your full name exactly as on your ID card.',hi:'पहचान पत्र के अनुसार पूरा नाम लिखें।',te:'ID కార్డ్‌లో ఉన్న విధంగా పూర్తి పేరు రాయండి.'},ex:'Ramesh Kumar'},
+father:{v:["Father's Name","Husband's Name","Mother's Name",'पिता का नाम','पति का नाम','తండ్రి పేరు','భర్త పేరు'],type:'profile',
+  t:{en:"Write your father's/mother's full name as on your ID.",hi:'पिता/माता का पूरा नाम लिखें।',te:'తండ్రి/తల్లి పూర్తి పేరు రాయండి.'},ex:'Suresh Kumar'},
+dob:{v:['Date of Birth','DOB','D.O.B','जन्म तिथि','జన్మ తేదీ','పుట్టిన తేదీ'],type:'date',
+  t:{en:'Write date of birth as DD/MM/YYYY — e.g. 15/08/1985.',hi:'जन्म तिथि DD/MM/YYYY में लिखें।',te:'DD/MM/YYYY ఫార్మాట్‌లో రాయండి.'},ex:'15/08/1985'},
+address:{v:['Address','Residential Address','Permanent Address','Pin Code','पता','स्थायी पता','చిరునామా','పిన్ కోడ్'],type:'profile',
+  t:{en:'Full address — house number, street, town, district, state, PIN code.',hi:'पूरा पता — मकान, गली, शहर, जिला, राज्य, पिन कोड।',te:'పూర్తి చిరునామా — ఇంటి నంబర్, వీధి, గ్రామం, జిల్లా, పిన్ కోడ్.'},ex:'42 MG Road, Anantapur, AP 515001'},
+phone:{v:['Phone','Phone Number','Mobile','Mobile Number','Contact','फ़ोन','मोबाइल','ఫోన్','మొబైల్'],type:'profile',
+  t:{en:'Your 10-digit mobile number.',hi:'10 अंकों का मोबाइल नंबर।',te:'10 అంకెల మొబైల్ నంబర్.'},ex:'98765 43210'},
+aadhaar:{v:['Aadhaar','Aadhaar Number','Aadhar','UID','आधार','आधार संख्या','ఆధార్','ఆధార్ నంబర్'],type:'sensitive',
+  t:{en:'Your 12-digit Aadhaar number from your Aadhaar card.',hi:'12 अंकों की आधार संख्या।',te:'12 అంకెల ఆధార్ నంబర్.'}},
+pan:{v:['PAN','PAN Number','PAN Card','Permanent Account Number','पैन','PAN నంబర్'],type:'sensitive',
+  t:{en:'Your 10-character PAN — looks like ABCDE1234F.',hi:'10 अक्षरों का PAN, जैसे ABCDE1234F।',te:'10 అక్షరాల PAN, ఉదా. ABCDE1234F.'}},
+email:{v:['Email','Email Address','E-mail','ईमेल','ఇమెయిల్'],type:'profile',
+  t:{en:'Your email — e.g. yourname@gmail.com.',hi:'ईमेल, जैसे yourname@gmail.com।',te:'ఇమెయిల్, ఉదా. yourname@gmail.com.'},ex:'ramesh@gmail.com'},
+gender:{v:['Gender','Sex','लिंग','లింగం'],type:'free_text',
+  t:{en:'Select Male, Female, or Other.',hi:'पुरुष, महिला, या अन्य चुनें।',te:'పురుషుడు, స్త్రీ, లేదా ఇతరం.'},ex:'Male'},
+signature:{v:['Signature','Sign','Sign Here','हस्ताक्षर','సంతకం'],type:'free_text',
+  t:{en:'Sign your name with a pen, matching your ID signature.',hi:'पेन से हस्ताक्षर करें।',te:'పెన్‌తో సంతకం చేయండి.'}},
+photo:{v:['Photo','Photograph','Paste Photo','Passport Photo','फोटो','ఫోటో'],type:'free_text',
+  t:{en:'Paste a recent passport-size photo, white background.',hi:'सफ़ेद पृष्ठभूमि की पासपोर्ट साइज़ फोटो।',te:'తెల్ల నేపథ్యంతో పాస్‌పోర్ట్ సైజ్ ఫోటో.'}},
+};
+
+/* ═══ UTILS ═══ */
+const $=id=>document.getElementById(id);
+const $$=s=>document.querySelectorAll(s);
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+const escA=s=>s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+function lev(a,b){
+  const la=a.length,lb=b.length;if(!la)return lb;if(!lb)return la;
+  const d=Array.from({length:la+1},()=>Array(lb+1));
+  for(let i=0;i<=la;i++)d[i][0]=i;for(let j=0;j<=lb;j++)d[0][j]=j;
+  for(let i=1;i<=la;i++)for(let j=1;j<=lb;j++)
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[la][lb];
+}
+
+function matchLine(text){
+  const c=text.trim();if(c.length<2)return null;
+  for(const[k,e]of Object.entries(KB)){
+    for(const l of e.v){
+      if(c.toLowerCase().includes(l.toLowerCase()))return k;
+      const th=l.length<=6?1:2;
+      if(lev(c.toLowerCase(),l.toLowerCase())<=th)return k;
+      for(const w of c.split(/\s+/))if(w.length>=3&&lev(w.toLowerCase(),l.toLowerCase())<=th)return k;
+    }
+  }return null;
+}
+
+const AADHAAR_RE=/\d{4}\s?\d{4}\s?\d{4}/;
+const PAN_RE=/[A-Z]{5}\d{4}[A-Z]/;
+const SENS=['aadhaar','aadhar','आधार','ఆధార్','uid','pan','पैन'];
+function hasSens(blocks){const f=blocks.join(' '),lo=f.toLowerCase();return SENS.some(v=>lo.includes(v))&&(AADHAAR_RE.test(f)||PAN_RE.test(f))}
+
+/* ═══ TTS ═══ */
+const LC={en:'en-IN',hi:'hi-IN',te:'te-IN'};
+function speak(text,l){if(!window.speechSynthesis)return;speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);u.lang=LC[l]||'en-IN';u.rate=.9;
+  const v=speechSynthesis.getVoices(),m=v.find(x=>x.lang===u.lang)||v.find(x=>x.lang.startsWith(l));
+  if(m)u.voice=m;speechSynthesis.speak(u)}
+if(window.speechSynthesis){speechSynthesis.getVoices();speechSynthesis.addEventListener('voiceschanged',()=>{})}
+
+/* ═══ DATA ═══ */
+const LS={
+  get(k,d){try{const v=localStorage.getItem('fs_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('fs_'+k,JSON.stringify(v))}catch(e){}},
+};
+
+let lang=LS.get('lang','en'),pendingOCR=null,editId=null,compBlob=null;
+
+/* ═══ i18n APPLY ═══ */
+function t(k){return(T[lang]&&T[lang][k])||T.en[k]||k}
+function applyT(){
+  document.documentElement.lang=lang;
+  $$('[data-t]').forEach(el=>{const s=t(el.getAttribute('data-t'));if(s)el.textContent=s});
+  $$('[data-t-placeholder]').forEach(el=>{const s=t(el.getAttribute('data-t-placeholder'));if(s)el.placeholder=s});
+  $('globalLang').value=lang;
+}
+
+/* ═══ NAV ═══ */
+function showV(id){$$('.v').forEach(v=>v.classList.remove('on'));$(id).classList.add('on');
+  $$('.bot button').forEach(b=>b.classList.toggle('on',b.dataset.v===id));window.scrollTo(0,0)}
+function showS(id){$$('.v').forEach(v=>v.classList.remove('on'));$(id).classList.add('on');window.scrollTo(0,0)}
+
+$$('.bot button').forEach(b=>b.addEventListener('click',()=>{
+  showV(b.dataset.v);
+  if(b.dataset.v==='v-track')renderApps();
+  if(b.dataset.v==='v-log')renderAudit();
+  if(b.dataset.v==='v-vault')renderDocs();
+}));
+
+/* ═══ LANG ═══ */
+$('globalLang').addEventListener('change',e=>{lang=e.target.value;LS.set('lang',lang);applyT();renderApps();renderAudit();renderDocs()});
+
+/* ═══ PROFILE ═══ */
+function loadProf(){const p=LS.get('prof',{});$('profName').value=p.name||'';$('profDob').value=p.dob||'';
+  $('profPhone').value=p.phone||'';$('profEmail').value=p.email||'';$('profAddr').value=p.address||''}
+$('saveProf').addEventListener('click',()=>{LS.set('prof',{name:$('profName').value,dob:$('profDob').value,
+  phone:$('profPhone').value,email:$('profEmail').value,address:$('profAddr').value});toast(t('profSaved'))});
+
+/* ═══ HOME ACTIONS ═══ */
+$('goScan').addEventListener('click',()=>showS('s-scan'));
+$('goSnip').addEventListener('click',()=>showS('s-scan'));
+$('goUrl').addEventListener('click',()=>{const u=$('urlInput').value.trim();if(u==='practice'||!u)openPractice();else openWeb(u)});
+$$('.presets a').forEach(a=>a.addEventListener('click',()=>{if(a.dataset.url==='practice')openPractice();else{$('urlInput').value=a.dataset.url;openPractice()}}));
+
+/* ═══ SCAN ═══ */
+$('scanBk').addEventListener('click',()=>showV('v-home'));
+$('btnPhoto').addEventListener('click',()=>$('capIn').click());
+$('btnGallery').addEventListener('click',()=>$('galIn').click());
+$('capIn').addEventListener('change',handleImg);
+$('galIn').addEventListener('change',handleImg);
+
+function handleImg(e){const f=e.target.files&&e.target.files[0];if(!f)return;e.target.value='';
+  const r=new FileReader();r.onload=ev=>{$('scPrev').src=ev.target.result;$('scPrevW').classList.remove('hide');runOCR(ev.target.result)};r.readAsDataURL(f)}
+
+async function runOCR(src){
+  $('scSpin').classList.remove('hide');$('scConf').classList.add('hide');pendingOCR=null;
+  try{const w=await Tesseract.createWorker('eng+hin+tel',1,{logger:m=>{
+    if(m.status==='recognizing text'){$('scSpin').querySelector('.spin-t').textContent=t('scReading')+' '+Math.round((m.progress||0)*100)+'%'}}});
+    const{data}=await w.recognize(src);await w.terminate();$('scSpin').classList.add('hide');
+    if(data.confidence<60){$('scConf').classList.remove('hide');$('scConf').textContent=t('scBlur')}
+    processOCR(data);
+  }catch(err){$('scSpin').classList.add('hide');console.error(err);$('scConf').classList.remove('hide')}}
+
+function processOCR(data){
+  const lines=(data.lines||[]).map(l=>l.text.trim()).filter(t=>t.length>1);
+  if(!lines.length){showS('s-results');showNoRes();return}
+  const matched=new Map(),unmatched=[];
+  for(const l of lines){const k=matchLine(l);if(k)matched.set(k,true);else unmatched.push(l)}
+  const m=Array.from(matched.keys());
+  if(hasSens(lines)){pendingOCR={m,unmatched};showS('s-results');showGuard();logA('gr_ocr',t('auditGrOcr'));return}
+  pendingOCR={m,unmatched};showS('s-results');renderRes(m,unmatched)}
+
+/* ═══ RESULTS ═══ */
+$('resBk').addEventListener('click',()=>{$('scPrevW').classList.add('hide');$('scConf').classList.add('hide');showS('s-scan')});
+
+function showNoRes(){$('resCards').innerHTML='';$('resHW').classList.add('hide');$('noRes').classList.remove('hide');$('umW').classList.add('hide');$('guardW').classList.add('hide')}
+function showGuard(){$('guardW').classList.remove('hide');$('resCards').innerHTML='';$('resHW').classList.add('hide');$('noRes').classList.add('hide');$('umW').classList.add('hide')}
+
+$('grOk').addEventListener('click',()=>{$('guardW').classList.add('hide');logA('user_ok',t('auditOk'));if(pendingOCR)renderRes(pendingOCR.m,pendingOCR.unmatched)});
+$('grCancel').addEventListener('click',()=>{$('guardW').classList.add('hide');logA('user_no',t('auditNo'));pendingOCR=null;showS('s-scan')});
+
+function renderRes(matched,unmatched){
+  $('guardW').classList.add('hide');$('resCards').innerHTML='';$('noRes').classList.add('hide');
+  if(matched.length){$('resHW').classList.remove('hide');
+    for(const k of matched){const f=KB[k];if(!f)continue;const txt=f.t[lang]||f.t.en;
+      let h='<div class="fc"><div class="fc-h"><span>'+esc(f.v[0])+'</span><button class="ghost js-sp" data-text="'+escA(txt)+'" data-lang="'+lang+'" style="font-size:.65rem;min-height:28px">'+t('readAloud')+'</button></div>';
+      h+='<div class="fc-t">'+esc(txt)+'</div>';
+      if(lang==='en'&&f.type!=='sensitive'&&f.ex)h+='<div class="fc-e">'+esc(f.ex)+'</div><div class="fc-el">'+t('exLabel')+'</div>';
+      h+='</div>';$('resCards').insertAdjacentHTML('beforeend',h)}
+    $('resCards').querySelectorAll('.js-sp').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.text,b.dataset.lang)));
+  }else{$('resHW').classList.add('hide');$('noRes').classList.remove('hide')}
+  if(unmatched.length){$('umW').classList.remove('hide');$('umL').innerHTML='';$('umT').setAttribute('aria-expanded','false');$('umL').classList.remove('open');
+    unmatched.forEach(u=>{const d=document.createElement('div');d.className='um-i';d.textContent=u;$('umL').appendChild(d)})}
+  else $('umW').classList.add('hide')}
+
+$('umT').addEventListener('click',()=>{const x=$('umT').getAttribute('aria-expanded')==='true';
+  $('umT').setAttribute('aria-expanded',String(!x));$('umL').classList.toggle('open')});
+
+/* ═══ WEB / PRACTICE ═══ */
+function openPractice(){showS('s-practice');fillPrac()}
+function openWeb(url){showS('s-web');let u=url;if(!u.startsWith('http'))u='https://'+u;
+  $('webContent').innerHTML='<p class="dim" style="margin-bottom:.75rem">'+esc(t('scSub'))+'</p>'+
+  '<iframe src="'+escA(u)+'" style="width:100%;height:380px;border:1px solid var(--bd);border-radius:var(--r);background:#fff" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>'+
+  '<p class="dim" style="margin-top:.75rem;font-size:.65rem">If the site won\'t load, it blocks embedding. Open in a new tab.</p>'}
+$('webBk').addEventListener('click',()=>{$('webContent').innerHTML='';showV('v-home')});
+$('pracBk').addEventListener('click',()=>showV('v-home'));
+
+function fillPrac(){const p=LS.get('prof',{});
+  if(p.name){$('pf-name').value=p.name;logA('prof',t('auditProf'))}
+  if(p.dob)$('pf-dob').value=p.dob;if(p.phone)$('pf-phone').value=p.phone;
+  if(p.email)$('pf-email').value=p.email;if(p.address)$('pf-addr').value=p.address;$('pf-aadhaar').value=''}
+
+$$('.pl').forEach(lbl=>lbl.addEventListener('click',()=>{
+  const fk=lbl.dataset.field;const f=KB[fk];if(!f)return;const txt=f.t[lang]||f.t.en;
+  $('prGuide').classList.remove('hide');
+  $('prGuide').innerHTML='<div class="guide"><div class="guide-h">'+t('guidanceFor')+' '+esc(f.v[0])+'</div>'+esc(txt)+
+    '<div style="margin-top:.5rem"><button class="ghost js-sp2" data-text="'+escA(txt)+'" data-lang="'+lang+'" style="font-size:.65rem">'+t('readAloud')+'</button></div></div>';
+  $('prGuide').querySelectorAll('.js-sp2').forEach(b=>b.addEventListener('click',()=>speak(b.dataset.text,b.dataset.lang)));
+  $('prGuide').scrollIntoView({behavior:'smooth',block:'center'})}));
+
+$('pf-aadhaar').addEventListener('input',e=>{const v=e.target.value;
+  if(AADHAAR_RE.test(v)){logA('gr_in',t('auditGrIn'));
+    showModal(t('grTitle'),t('grText'),()=>logA('user_ok',t('auditOk')),()=>{$('pf-aadhaar').value='';logA('user_no',t('auditNo'))})}});
+
+$('prSubmit').addEventListener('click',()=>{toast(t('appSaved'));
+  const apps=LS.get('apps',[]);apps.push({id:Date.now(),name:'Scholarship (Practice)',status:'submitted',startedAt:new Date().toISOString(),deadline:'',notes:''});
+  LS.set('apps',apps);badges();showV('v-home')});
+
+/* ═══ COMPRESSOR ═══ */
+$('goCompress').addEventListener('click',()=>$('compIn').click());
+$('compIn').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;e.target.value='';
+  const orig=f.size;const rd=new FileReader();rd.onload=ev=>{const img=new Image();img.onload=()=>{
+    const MAX=1200;let w=img.width,h=img.height;if(w>MAX){h=Math.round(h*(MAX/w));w=MAX}
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    c.toBlob(blob=>{compBlob=blob;$('compPrev').src=URL.createObjectURL(blob);
+      $('origSz').textContent=fmtB(orig);$('compSz').textContent=fmtB(blob.size);
+      $('savePct').textContent=Math.round((1-blob.size/orig)*100)+'%';$('compOut').classList.remove('hide');
+      const docs=LS.get('docs',[]);docs.unshift({id:Date.now(),name:f.name,orig,comp:blob.size,date:new Date().toISOString()});
+      if(docs.length>20)docs.length=20;LS.set('docs',docs);badges();renderDocs()},'image/jpeg',.6)};
+    img.src=ev.target.result};rd.readAsDataURL(f)});
+
+$('dlComp').addEventListener('click',()=>{if(!compBlob)return;const a=document.createElement('a');
+  a.href=URL.createObjectURL(compBlob);a.download='compressed_'+Date.now()+'.jpg';a.click()});
+
+function fmtB(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB'}
+function renderDocs(){const docs=LS.get('docs',[]);
+  if(!docs.length){$('docList').innerHTML='<div class="empty">No documents yet.</div>';return}
+  $('docList').innerHTML=docs.map(d=>'<div class="row"><div class="row-i">f</div><div class="row-b"><div class="row-t">'+esc(d.name)+'</div><div class="row-m">'+fmtB(d.orig)+' → '+fmtB(d.comp)+'</div></div></div>').join('')}
+
+/* ═══ TRACKER ═══ */
+$('addApp').addEventListener('click',()=>{editId=null;$('aaNameIn').value='';$('aaStatusIn').value='draft';$('aaDeadIn').value='';$('aaNotesIn').value='';$('aaDel').style.display='none';showS('s-addapp')});
+$('aaBk').addEventListener('click',()=>showV('v-track'));
+
+$('aaSave').addEventListener('click',()=>{const apps=LS.get('apps',[]);
+  const o={id:editId||Date.now(),name:$('aaNameIn').value||'Untitled',status:$('aaStatusIn').value,deadline:$('aaDeadIn').value,notes:$('aaNotesIn').value,startedAt:new Date().toISOString()};
+  if(editId){const i=apps.findIndex(a=>a.id===editId);if(i>=0)apps[i]=o}else apps.unshift(o);
+  LS.set('apps',apps);badges();toast(t('appSaved'));showV('v-track')});
+
+$('aaDel').addEventListener('click',()=>{let apps=LS.get('apps',[]);apps=apps.filter(a=>a.id!==editId);
+  LS.set('apps',apps);badges();toast(t('appDel'));showV('v-track')});
+
+function renderApps(){const apps=LS.get('apps',[]);
+  if(!apps.length){$('appList').innerHTML='<div class="empty">Nothing tracked yet.</div>';return}
+  const sorted=[...apps].sort((a,b)=>{if(!a.deadline)return 1;if(!b.deadline)return -1;return new Date(a.deadline)-new Date(b.deadline)});
+  $('appList').innerHTML=sorted.map(a=>{
+    const stK='st'+a.status.charAt(0).toUpperCase()+a.status.slice(1).replace('_a','A');
+    const stT=t(stK)||a.status;const dl=a.deadline?new Date(a.deadline).toLocaleDateString():'—';
+    return '<div class="row" data-id="'+a.id+'"><div class="row-i">→</div><div class="row-b"><div class="row-t">'+esc(a.name)+'</div><div class="row-m">'+dl+' <span class="st st-'+a.status+'">'+esc(stT)+'</span></div></div></div>'
+  }).join('');
+  $('appList').querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>{
+    const a=apps.find(x=>x.id===Number(el.dataset.id));if(!a)return;
+    editId=a.id;$('aaNameIn').value=a.name;$('aaStatusIn').value=a.status;$('aaDeadIn').value=a.deadline||'';$('aaNotesIn').value=a.notes||'';
+    $('aaDel').style.display='';showS('s-addapp')}))}
+
+function checkDL(){const apps=LS.get('apps',[]);const now=new Date();
+  apps.forEach(a=>{if(!a.deadline||a.status==='completed')return;
+    const dl=new Date(a.deadline);const d=Math.ceil((dl-now)/(864e5));
+    if(d<=7&&d>=0&&'Notification' in window&&Notification.permission==='granted')
+      new Notification(t('dlSoon'),{body:t('dlMsg').replace('{name}',a.name).replace('{date}',dl.toLocaleDateString())})})}
+if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+setTimeout(checkDL,2000);setInterval(checkDL,60000);
+
+/* ═══ AUDIT ═══ */
+function logA(type,detail){const log=LS.get('audit',[]);log.unshift({id:Date.now(),ts:new Date().toISOString(),type,detail});
+  if(log.length>100)log.length=100;LS.set('audit',log);badges()}
+function renderAudit(){const log=LS.get('audit',[]);
+  if(!log.length){$('auditList').innerHTML='<div class="empty">No events yet.</div>';return}
+  $('auditList').innerHTML=log.map(e=>'<div class="au"><div class="au-t">'+new Date(e.ts).toLocaleString()+'</div><div class="au-d">'+esc(e.detail)+'</div></div>').join('')}
+$('clearAudit').addEventListener('click',()=>{LS.set('audit',[]);renderAudit()});
+
+/* ═══ BADGES ═══ */
+function badges(){const apps=LS.get('apps',[]);const docs=LS.get('docs',[]);
+  const ac=apps.filter(a=>a.status!=='completed').length;
+  $('vDot').classList.toggle('vis',docs.length>0);$('tDot').classList.toggle('vis',ac>0)}
+
+/* ═══ MODAL ═══ */
+let moOk=null,moNo=null;
+function showModal(title,text,ok,no){$('moT').textContent=title;$('moP').textContent=text;moOk=ok;moNo=no;$('moBg').classList.add('vis')}
+$('moYes').addEventListener('click',()=>{$('moBg').classList.remove('vis');if(moOk)moOk()});
+$('moNo').addEventListener('click',()=>{$('moBg').classList.remove('vis');if(moNo)moNo()});
+
+/* ═══ TOAST ═══ */
+function toast(msg){let t=document.querySelector('.toast');if(t)t.remove();
+  t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+
+/* ═══ INIT ═══ */
+applyT();loadProf();badges();renderDocs();renderApps();renderAudit();
+
+/* ═══ CHATBOT ═══ */
+console.log("CHATBOT INIT");
+let chatHist = [];
+$('chatFab').addEventListener('click', () => {
+  console.log("FAB CLICKED");
+  $('chatW').classList.toggle('on');
+});
+$('chatClose').addEventListener('click', () => $('chatW').classList.remove('on'));
+
+async function sendChat() {
+  const v = $('chatInp').value.trim();
+  if(!v) return;
+  $('chatInp').value = '';
+  
+  const b = $('chatB');
+  b.insertAdjacentHTML('beforeend', '<div class="msg user">'+esc(v)+'</div>');
+  b.scrollTop = b.scrollHeight;
+  
+  const aiTyping = document.createElement('div');
+  aiTyping.className = 'msg ai';
+  aiTyping.textContent = '...';
+  b.appendChild(aiTyping);
+  b.scrollTop = b.scrollHeight;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: v, history: chatHist })
+    });
+    const data = await res.json();
+    aiTyping.remove();
+    
+    if(data.reply) {
+      chatHist.push({ role: 'user', text: v }, { role: 'model', text: data.reply });
+      b.insertAdjacentHTML('beforeend', '<div class="msg ai">'+esc(data.reply)+'</div>');
+    } else {
+      b.insertAdjacentHTML('beforeend', '<div class="msg ai" style="color:var(--dn)">Error connecting to AI.</div>');
+    }
+  } catch(e) {
+    aiTyping.remove();
+    b.insertAdjacentHTML('beforeend', '<div class="msg ai" style="color:var(--dn)">Connection failed.</div>');
+  }
+  b.scrollTop = b.scrollHeight;
+}
+$('chatSend').addEventListener('click', sendChat);
+$('chatInp').addEventListener('keypress', (e) => { if(e.key==='Enter') sendChat() });
+
+})();
+</script>
+</body>
+</html>
